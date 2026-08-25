@@ -65,7 +65,10 @@ function render({ focusChoice = false } = {}) {
       button.dataset.choice = choice.id;
       button.textContent = choice.label;
       button.addEventListener("click", () => {
-        if (model.choose(choice.id)) render({ focusChoice: true });
+        if (model.choose(choice.id)) {
+          audio.playDialogueChoice();
+          render({ focusChoice: true });
+        }
       });
       elements.choices.append(button);
     });
@@ -140,7 +143,14 @@ document.addEventListener(
   "click",
   (event) => {
     const button = event.target.closest("button");
-    if (button && button !== elements.sound && !button.disabled) audio.playClick();
+    if (
+      button &&
+      button !== elements.sound &&
+      !button.classList.contains("choice-button") &&
+      !button.disabled
+    ) {
+      audio.playClick();
+    }
   },
   { capture: true },
 );
