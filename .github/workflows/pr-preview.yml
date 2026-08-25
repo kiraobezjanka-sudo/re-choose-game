@@ -40,10 +40,6 @@ jobs:
         if: github.event.action != 'closed'
         run: npm run build
 
-      - name: Disable Jekyll processing
-        if: github.event.action != 'closed'
-        run: touch dist/.nojekyll
-
       - name: Deploy preview
         uses: rossjrw/pr-preview-action@v1.8.1
         with:
