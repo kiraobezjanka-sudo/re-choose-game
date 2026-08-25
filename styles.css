@@ -135,6 +135,11 @@ h1 {
 .icon-button:hover,
 .icon-button:focus-visible { border-color: var(--acid-bright); outline: none; }
 
+.sound-button[aria-pressed="false"] {
+  color: var(--muted);
+  border-color: var(--line);
+}
+
 .lab-depth { position: absolute; inset: 0; }
 
 .containment-door {
@@ -540,8 +545,10 @@ h1 {
 @media (max-width: 520px) {
   .game-shell { grid-template-rows: 39svh auto; }
   .lab-scene { min-height: 39svh; }
+  .hud { gap: 8px; }
   .hud-actions { gap: 5px; }
-  .icon-button { padding: 0 9px; font-size: .72rem; }
+  .icon-button { padding: 0 7px; font-size: .68rem; }
+  .sound-button { min-width: 50px; }
   .signal-panel { max-width: calc(100% - 32px); }
   .meter-row { grid-template-columns: 72px 1fr 35px; }
   .scientist-wrap { bottom: -35%; }

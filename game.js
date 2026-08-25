@@ -1,6 +1,8 @@
 import { GameModel } from "./game-model.js";
+import { HorrorAudio } from "./audio.js";
 
 const model = new GameModel();
+const audio = new HorrorAudio();
 
 const elements = {
   shell: document.querySelector(".game-shell"),
@@ -20,6 +22,7 @@ const elements = {
   restart: document.querySelector("#restart-button"),
   restartTop: document.querySelector("#restart-top"),
   pause: document.querySelector("#pause-button"),
+  sound: document.querySelector("#sound-button"),
   pauseOverlay: document.querySelector("#pause-overlay"),
   resume: document.querySelector("#resume-button"),
   systemState: document.querySelector("#system-state"),
@@ -48,6 +51,7 @@ function render({ focusChoice = false } = {}) {
   elements.trustValue.textContent = `${snapshot.trust}%`;
   elements.infectionMeter.style.width = `${snapshot.infection}%`;
   elements.infectionValue.textContent = `${snapshot.infection}%`;
+  audio.setGameState(snapshot.status, snapshot.ending);
 
   elements.consequence.hidden = !snapshot.consequence;
   elements.consequenceText.textContent = snapshot.consequence || "";
@@ -84,6 +88,7 @@ function render({ focusChoice = false } = {}) {
 
 function startGame() {
   if (!model.start()) return;
+  audio.start();
   elements.briefing.hidden = true;
   render({ focusChoice: true });
 }
@@ -107,11 +112,44 @@ function resumeGame() {
   render({ focusChoice: true });
 }
 
+function renderSoundButton() {
+  if (!audio.supported) {
+    elements.sound.textContent = "Звук: нет";
+    elements.sound.disabled = true;
+    elements.sound.setAttribute("aria-label", "Звук не поддерживается браузером");
+    return;
+  }
+
+  elements.sound.textContent = audio.enabled ? "Звук: вкл" : "Звук: выкл";
+  elements.sound.setAttribute("aria-pressed", String(audio.enabled));
+  elements.sound.setAttribute("aria-label", audio.enabled ? "Выключить звук" : "Включить звук");
+}
+
 elements.start.addEventListener("click", startGame);
 elements.restart.addEventListener("click", restartGame);
 elements.restartTop.addEventListener("click", restartGame);
 elements.pause.addEventListener("click", pauseGame);
 elements.resume.addEventListener("click", resumeGame);
+elements.sound.addEventListener("click", () => {
+  const enabled = audio.toggle();
+  if (enabled) audio.playClick();
+  renderSoundButton();
+});
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const button = event.target.closest("button");
+    if (button && button !== elements.sound && !button.disabled) audio.playClick();
+  },
+  { capture: true },
+);
+
+document.addEventListener("visibilitychange", () => {
+  if (!audio.context) return;
+  if (document.hidden) audio.context.suspend().catch(() => {});
+  else if (audio.enabled && model.state.status !== "paused") audio.context.resume().catch(() => {});
+});
 
 document.addEventListener("keydown", (event) => {
   if (event.code === "Escape" || event.code === "KeyP") {
@@ -121,3 +159,4 @@ document.addEventListener("keydown", (event) => {
 });
 
 render();
+renderSoundButton();
