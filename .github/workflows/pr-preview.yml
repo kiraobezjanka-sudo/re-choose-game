@@ -1,0 +1,64 @@
+name: Deploy Pull Request preview
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  pages: write
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: github.event.action != 'closed'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test dialogue routes
+        if: github.event.action != 'closed'
+        run: npm test
+
+      - name: Build static preview
+        if: github.event.action != 'closed'
+        run: npm run build
+
+      - name: Disable Jekyll processing
+        if: github.event.action != 'closed'
+        run: touch dist/.nojekyll
+
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: dist
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          wait-for-pages-deployment: false
+          qr-code: false
+
+      - name: Request GitHub Pages build
+        run: |
+          curl --fail-with-body --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
