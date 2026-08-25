@@ -170,6 +170,46 @@ export class HorrorAudio {
     noise.stop(now + 0.045);
   }
 
+  playDialogueChoice() {
+    if (!this.enabled) return;
+    const context = this.ensureContext();
+    if (!context) return;
+    if (context.state === "suspended") context.resume().catch(() => {});
+
+    const now = context.currentTime;
+    const impact = context.createOscillator();
+    impact.type = "sawtooth";
+    impact.frequency.setValueAtTime(132, now);
+    impact.frequency.exponentialRampToValueAtTime(42, now + 0.14);
+
+    const impactFilter = context.createBiquadFilter();
+    impactFilter.type = "lowpass";
+    impactFilter.frequency.setValueAtTime(820, now);
+    impactFilter.frequency.exponentialRampToValueAtTime(170, now + 0.16);
+
+    const impactGain = context.createGain();
+    impactGain.gain.setValueAtTime(0.0001, now);
+    impactGain.gain.exponentialRampToValueAtTime(0.12, now + 0.006);
+    impactGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    impact.connect(impactFilter).connect(impactGain).connect(this.master);
+
+    const staticBurst = context.createBufferSource();
+    staticBurst.buffer = this.noiseBuffer;
+    const staticFilter = context.createBiquadFilter();
+    staticFilter.type = "bandpass";
+    staticFilter.frequency.value = 1640;
+    staticFilter.Q.value = 0.8;
+    const staticGain = context.createGain();
+    staticGain.gain.setValueAtTime(0.065, now);
+    staticGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+    staticBurst.connect(staticFilter).connect(staticGain).connect(this.master);
+
+    impact.start(now);
+    impact.stop(now + 0.2);
+    staticBurst.start(now);
+    staticBurst.stop(now + 0.08);
+  }
+
   setGameState(state, ending = null) {
     this.state = state;
     this.ending = ending;
